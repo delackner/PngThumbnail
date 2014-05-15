@@ -1,0 +1,29 @@
+#!/bin/sh
+
+echo `pwd`
+graphics="/usr/local/bin/gm"
+PATH=$PATH:.
+echo `which pngquant`
+echo `which pngout`
+
+suffix="_diff.png"
+count="$#"
+i=0
+
+for f in "$@"
+    do  
+        echo "PROGRESS:"`bc <<< "100 * $i/$count"`
+        workdir=`dirname $f`
+        mkdir $workdir/out &>/dev/null || true
+        name=`basename $f`
+        output="$workdir/out/$name"
+        cat "$f" | ./pngquant --quality 50 - > "$output"
+        ./pngout -q "$output"
+        echo "testing $f vs $output"
+        ./perceptualdiff -fov 15 "$f" "$output" -output /tmp/diff.ppm &>/dev/null || {
+            echo "$name failed perceptual diff"
+            $graphics convert /tmp/diff.ppm $output$suffix
+            cp $f ${output}_orig.png
+        } 
+        i=$[$i +1]
+    done
